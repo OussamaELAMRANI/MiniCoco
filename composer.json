@@ -1,0 +1,27 @@
+{
+  "name": "oussamaelamrani/mino-coco",
+  "description": "Mini Framework PHP at name Minicoco",
+  "require-dev": {
+    "phpunit/phpunit": "^8.5"
+  },
+  "license": "MIT",
+  "authors": [
+    {
+      "name": "Oussama EL AMRANI",
+      "email": "oussama1elamrani@gmai.com"
+    }
+  ],
+  "autoload": {
+    "psr-4": {
+      "Coco\\": "coco",
+      "App\\": "src"
+    }
+  },
+  "autoload-dev": {
+    "Test\\": "test"
+  },
+  "require": {
+    "guzzlehttp/psr7": "^1.6",
+    "http-interop/response-sender": "^1.0"
+  }
+}
