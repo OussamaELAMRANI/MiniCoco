@@ -1,11 +1,10 @@
 <?php
 
 
-namespace Test;
+namespace Test\Features;
 
 
 use Coco\App;
-use GuzzleHttp\Psr7\Request;
 use GuzzleHttp\Psr7\ServerRequest;
 use PHPUnit\Framework\TestCase;
 
