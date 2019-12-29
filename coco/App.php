@@ -2,50 +2,82 @@
 
 namespace Coco;
 
-use GuzzleHttp\Psr7\ServerRequest;
+use Coco\Middlewares\CombineMiddleware;
+use DI\ContainerBuilder;
+use Exception;
+use Psr\Container\ContainerInterface;
+use Psr\Http\Server\RequestHandlerInterface;
 use Psr\Http\Message\{ResponseInterface As Response, ServerRequestInterface as Request};
+use function DI\create;
 
-class App
+class App implements RequestHandlerInterface
 {
-    /**
-     * @var ServerRequest
-     */
-    private $req;
 
+    /**
+     * @var array
+     */
+    private $middlewares;
+    private $container;
+    /**
+     * @var array
+     */
+    private $modules;
     /**
      * App constructor.
      * @param array $modules
+     * @throws Exception
      */
-    public function __construct(array $modules)
+    public function __construct(array $modules = [])
     {
+        $this->modules = $modules;
+        $this->container = $this->getContainer();
     }
 
     public function run(Request $request): Response
     {
-        $this->req = $request;
-        return $this->deleteLastSlash();
+        foreach ($this->modules as $module) {
+            $this->getContainer()->get($module);
+        }
+        return $this->handle($request);
 
     }
 
-    private function deleteLastSlash(): Response
+    /**
+     * @return ContainerInterface
+     * @throws Exception
+     */
+    public function getContainer(): ContainerInterface
     {
-        $uri = $this->req->getUri()->getPath();
-
-        if (strlen($uri) > 1)
-            if (!empty($uri) && $uri[-1] === '/') {
-                return (new \GuzzleHttp\Psr7\Response())
-                    ->withStatus(301)
-                    ->withHeader('Location', substr($uri, 0, -1));
-            }
-
-        if ($uri == "/") {
-            return new \GuzzleHttp\Psr7\Response(200, [], '<p>App</p>');
-        } elseif ($uri == '/blog') {
-            return new \GuzzleHttp\Psr7\Response(200, [], '<p>Blog</p>');
-        } else {
-            return new \GuzzleHttp\Psr7\Response(404, [], '<p>404</p>');
+        if (is_null($this->container)) {
+            $builder = new ContainerBuilder();
+            $builder->addDefinitions([App::class => $this]);
+            $builder->useAutowiring(true);
+            $this->container = $builder->build();
         }
+        return $this->container;
+    }
 
+
+    /**
+     * Pipe the All middleware
+     *
+     * @param string $middleware
+     * @return $this
+     */
+    public function pipe(string $middleware): self
+    {
+        $this->middlewares[] = $middleware;
+        return $this;
+    }
+
+    /**
+     * @inheritDoc
+     * @throws Exception
+     */
+    public function handle(Request $request): Response
+    {
+        $middleware = new CombineMiddleware($this->container, $this->middlewares, $this);
+        return $middleware->handle($request);
     }
 
 }
